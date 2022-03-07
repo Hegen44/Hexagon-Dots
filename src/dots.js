@@ -15,10 +15,8 @@ export default class Dots extends Phaser.GameObjects.Container {
         super(scene);
         scene.add.existing(this);
         this.circle = scene.add.circle(0, 0, size);
-
-
-        //scene.physics.add.existing(this);
         scene.physics.world.enable(this);
+        this.depth = 1;
 
         this.add(this.circle); 
         this.scene = scene;
@@ -30,10 +28,27 @@ export default class Dots extends Phaser.GameObjects.Container {
         this.row = 0;
         this.column = 0;
 
-
-		let body = this.body;
         // @ts-ignore
-        body.setCircle(size, -size, -size)
+        this.body.setCircle(size, -size, -size)
+
+        //set up interactive component
+        this.setInteractive(new Phaser.Geom.Circle(0,0,size), Phaser.Geom.Circle.Contains);
+        this.on('down', function () {
+            scene.events.emit('addDots', this);
+            //console.log("down");
+    
+        });
+
+        this.on('over', function () {
+            let pointer = this.scene.input.activePointer;
+            if(pointer.isDown){
+                scene.events.emit('addDots', this);
+                //console.log("over");
+            }
+
+    
+        });
+        //scene.input.enableDebug(this);
 
         this.despawn();
 
@@ -50,7 +65,6 @@ export default class Dots extends Phaser.GameObjects.Container {
         // });
 
         // this.add(particles);
-
 	}
 
     /**
@@ -60,6 +74,7 @@ export default class Dots extends Phaser.GameObjects.Container {
     spawn(x , y){
         this.x = x;
         this.y = y;
+        //this.setPosition(this.x , this.y );
         this.row = 0;
         //this.column = 0;
         this.color = DotColors.getRandomColor();
@@ -76,7 +91,7 @@ export default class Dots extends Phaser.GameObjects.Container {
     despawn(){
         this.setActive(false);
         this.setVisible(false);
-
+        this.disableInteractive();
         //this.scene.physics.world.disable(this);
     }
 
@@ -87,10 +102,39 @@ export default class Dots extends Phaser.GameObjects.Container {
         this.waypoint.push(wp);
     }
 
+
+    setGridIndex(i,j){
+        this.row = i, this.column = j;
+    }
+
+    isNeighbor(other){
+        let neighbor = this.getNeighborIndexs(this.row);
+        let rdiff = other.row - this.row;
+        let cdiff = other.column - this.column;
+
+        for(let i of neighbor)
+            if(i[0] == rdiff && i[1] == cdiff) 
+                return true;
+        return false;
+    }
+
+    getNeighborIndexs(row){
+        // even rows 
+        let even = [[+1,  0], [-1, +1], [ 0, -1], 
+                    [ 0, +1], [+1, +1], [-1,  0]];
+        // odd rows 
+        let odd = [[+1,  0], [ 0, -1], [-1, -1], 
+                   [ 0, +1], [-1,  0], [+1, -1]];
+                   
+        return (row%2 == 0)? even : odd;
+    }
+
+
     update(){
         
         if(this.waypoint.length > 0){
-            
+
+            this.scene.physics.world.enable(this);
             let target = this.waypoint[0];
             let dis = Phaser.Math.Distance.Between(this.x, this.y, this.waypoint[0].x , this.waypoint[0].y);
             
@@ -99,14 +143,18 @@ export default class Dots extends Phaser.GameObjects.Container {
             if(dis < 5){
              
                 this.waypoint.shift();
-                if(this.waypoint.length  == 0) this.scene.physics.world.disable(this);
+                if(this.waypoint.length  == 0) {
+                    this.scene.physics.world.disable(this);
+                    this.setInteractive();
+                }
                 this.setPosition(target.x , target.y );
             } else {
-                this.scene.physics.moveToObject(this, target, 200);
-                //this.setPosition(this.x , this.y );
+                this.scene.physics.moveToObject(this, target, 500);
+
             }
 
         }
 
     }
+    
 }

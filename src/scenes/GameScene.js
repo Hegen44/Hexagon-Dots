@@ -1,7 +1,9 @@
 import Phaser, { Physics, Renderer } from 'phaser'
 import HexTile from '../hextile'
 import HexGrid from '../hexgrid'
+import Connect from '../connect'
 import DotColors from '../dotscolor'
+import { ColorCode } from '../dotscolor'
 import Dot from '../dots'
 import DotsGroup from '../dotsgroup'
 
@@ -31,19 +33,92 @@ export default class GameScene extends Phaser.Scene
         return startX;
     }
 
+    gameOver ()
+    {
+        this.input.off('gameobjectover');
+        this.input.off('gameobjectdown');
+        this.input.off('pointerup');
+        this.input.off('gameobjectup');
+    }
+
 	create()
 	{
-        this.score = 0;
+        this.text = this.add.text(50, 50, '',{ font: '48px Arial'});
+        this.text.setColor(ColorCode.BLACK);
+        this.text.depth = 3;
+        //this.add.image(width/2, height/2, 'bg'); //this.add.image(400, 300, 'bg');
+        this.cameras.main.setBackgroundColor(ColorCode.WHITE);
+
+        this.score = 0; //
+        //this.timer = 0; //this.time.addEvent({ delay: 10000, callback: this.gameOver, callbackScope: this }); // gamerover event
+        let ms = 1000; // millisecond
+        let sec = 60; // second
+        this.countDown = sec * ms;
+        this.timer = this.time.addEvent({ delay: this.countDown, callback: this.gameOver, callbackScope: this }); // gamerover event
+        //this.timer.paused = true;
+        
+        this.connected = new Connect(this);
+
+        this.events.on('addDots', this.connected.addDot, this.connected);
 
         this.row =  6;
         this.column = 6;
-        var row =  this.row;
-        var column = this.column;
+        if(this.row == 0 || this.column == 0) return;
+
+        let row =  this.row;
+        let column = this.column;
         let height = this.canvas.height;
         let width = this.canvas.width;
         //let center = this.scale.gameSize;
-        this.add.image(width/2, height/2, 'bg'); //this.add.image(400, 300, 'bg');
-        //this.physics.world.enable(this.arc);
+
+        let hexSize = 50;   // distance from the center to any corner (radius)
+        this.overSize = hexSize;
+
+        this.dotsGroup = new DotsGroup(this, this.row * this.column, hexSize/3);
+        this.hexgrid = new HexGrid(this, row, column, hexSize, width, height);
+        this.hexgrid.refillGrid(this.dotsGroup.group, true);
+
+        this.graphic = this.add.graphics();
+        this.graphic.depth = 2; // in front of all object
+        
+
+        // this.input.on('pointerup', function (pointer)
+        // {
+        //     let con = this.connected;
+        //     if(con.isConnected(true)){
+        //         let dot_array  = [];
+        //         if(con.isLoop()){
+   
+        //             let color = this.connected.getConnectColor();
+        //             dot_array= this.dotsGroup.getMatched(color);
+        //         }else {
+         
+        //             dot_array = con.connectDots;
+        //         }
+                
+        //         this.hexgrid.connectHandler(dot_array);
+        //         this.score += dot_array.length;
+        //         this.hexgrid.refillGrid(dot_array, false);
+        //     }
+        //     con.resetConnected();
+
+        // }, this);
+
+        this.input.on('pointerup', this.pointerUpHandler, this);
+        this.input.on('gameobjectdown', function (pointer, gameObject)
+        {
+            gameObject.emit('down', gameObject);
+
+        }, this);
+        this.input.on('gameobjectover', function (pointer, gameObject)
+        {
+
+            gameObject.emit('over', gameObject);
+        }, this);
+        this.input.on('gameobjectup', function (pointer, gameObject)
+        {
+            gameObject.emit('clicked', gameObject);
+        }, this);
 
         // var balls = this.physics.add.group({
         //     key: 'ball',
@@ -72,63 +147,45 @@ export default class GameScene extends Phaser.Scene
         //     yoyo: true,
         //     repeat: -1
         // });
-
-
-
-
-        //this.hexTileGrid = [];
-
-        let hexSize = 50;   // distance from the center to any corner (radius)
-
-        let hexTileWidth = Math.sqrt(3) * hexSize; // w = sqrt(3) * size
-
-        let horizontalOffset=hexTileWidth; // distance horizontally from on center to another center is w
-
-        let xOffset = hexTileWidth/2;
-        let startXInit=width/2 - ((column+0.5) * hexTileWidth)/2;  // total width of grid is (x column + .5f column)  * hexTileWidth
-
-        this.dotsGroup = new DotsGroup(this, this.row * this.column, hexSize/3);
-        this.hexgrid = new HexGrid(this, row, column, hexSize, width, height);
-   
-        //let hexGrid = this.add.group();;
-        let hexTile;
-        //let index = 0;
-        for (let i = 0; i < row; i++)
-        {
-            //let hexColumn = [];
-            let startX = startXInit;
-            startX += this.getRowHorzOffset(row, i, xOffset);
-            let dotStartX = startXInit + this.getRowHorzOffset(row, 0, xOffset);
-            let dotStartY = -i * hexSize * 2  - hexSize;
-
-            for (let j = 0; j < column; j++)
-            {
-
-                
-                let dot = this.dotsGroup.get();
-                if (dot)
-                {
-                    dot.spawn(dotStartX, dotStartY);
-                    this.hexgrid.insertDot(dot, j);
-                }
-
-                startX+=horizontalOffset;
-                dotStartX += horizontalOffset;
-            }    
-        }
-
-
-        let timer = this.time.addEvent({ delay: 10000, callback: this.gameOver, callbackScope: this }); // gamerover event
-
+    
 	}
 
-    gameOver ()
-    {
-        this.input.off('gameobjectup');
+    pointerUpHandler(){
+        let con = this.connected;
+        if(con.isConnected(true)){
+            let dot_array  = [];
+            if(con.isLoop()){
+
+                let color = this.connected.getConnectColor();
+                dot_array= this.dotsGroup.getMatched(color);
+            }else {
+     
+                dot_array = con.connectDots;
+            }
+            
+            this.hexgrid.connectHandler(dot_array);
+            this.score += dot_array.length;
+            this.hexgrid.refillGrid(dot_array, false);
+        }
+        con.resetConnected();
     }
 
     update(){
 
+        this.graphic.clear();
+        this.graphic.setVisible(true);
+
+        let pointer = this.input.activePointer;
+        this.connected.updatePath(pointer);
+        if(this.connected.isConnected(false)){
+            
+            this.graphic.lineStyle(this.overSize/4, this.connected.getConnectColor());
+            this.graphic.strokePoints(this.connected.points);
+        }
+        
+        let time = Math.floor(this.countDown - this.timer.getElapsedSeconds());
+        time = Math.floor(this.timer.getRemainingSeconds());
+        this.text.setText("Time: " + time + "\nScore: " + this.score);
         this.dotsGroup.update();
         
     }

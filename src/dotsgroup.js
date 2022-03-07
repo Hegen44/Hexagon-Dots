@@ -15,6 +15,11 @@ export default class DotGroup{
         this.maxSize = size;
         this.dotSize = dotsSize;
         this.group = [];
+
+        for(let i =0; i < size; ++i){
+            let dot = new Dots(this.scene, this.dotSize);
+            this.group.push(dot);
+        }
 	}
 
     update(){
@@ -42,7 +47,7 @@ export default class DotGroup{
         let matched = [];
         for(let i = 0; i < total; ++i){
             if(this.group[i].color == color)
-                matched.push(i)
+                matched.push(this.group[i])
         }
         return matched;
     }

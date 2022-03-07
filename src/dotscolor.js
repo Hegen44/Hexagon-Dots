@@ -1,22 +1,39 @@
 
-class ColorCode{ 
-    static WHITE = "0xfbf8fd";
-    static GRAY = "0xa1a9d1";
-    static BLUE = "0x007fff";
-    static NAVY = "0x24256f";
-    static BLACK = "0x141218"; 
-    static PURPLE = "0x5f0e52";
-    static RED =  "0xfd1a43";
-    static ORANGE = "0xffb16c";
-    static YELLOW = "0xfede5b";
-    static GREEN = "0x74ead6";
+export class ColorCode{ 
+    // static WHITE = "#ffeee5";
+    // static GRAY = "#3e4a6d";
+    // static SLIVER = "#5a7088";
+    // static BLUE = "#0099db";
+    // static NAVY = "#124e89";
+    // static BLACK = "#1c162d "; 
+    // static PURPLE = "#841252";
+    // static VIOLET = "#3d083b";
+    // static RED =  "#da2424";
+    // static ORANGE = "#f77622";
+    // static GOLD = "#ecab11";
+    // static YELLOW = "#fee761";
+    // static LIME = "#07e5a0";
+    // static GREEN = "#43bd35";
+
+    static WHITE = "#e3cfb4";
+    static CREME = "#d9ac8b";
+    static IVORY = "#b1a58d";
+    static SKY = "#5d7275";
+    static BLUE = "#5c8b93";
+    static NAVY = "#243d5c";
+    static BLACK = "#2b2821"; 
+    static BLOWN = "#624c3c";
+    static RED =  "#b03a48";
+    static ORANGE = "#d4804d";
+    static YELLOW = "#e0c872";
+    static GREEN = "#3e6958";
 }
 
 
 export default class DotColors {
 
     static availableColor = [];  // all color in hex code
-    static pickedColor = [2, 6, 7, 8, 9];
+    static pickedColor = [8, 11, 10, 4, 9];
 
     static getRandomColor(){
         let pickedIndex = Phaser.Math.Between(0, this.DOT_COLORS - 1);

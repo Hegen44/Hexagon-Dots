@@ -1,5 +1,7 @@
 import { Geom } from 'phaser';
-import HexTile from './hextile'
+import HexTile from './hextile';
+import Dots from './dots';
+import { ColorCode } from './dotscolor';
 
 export default class HexGrid {
 
@@ -18,6 +20,7 @@ export default class HexGrid {
         this.scene = scene;
         this.row = row;
         this.col = column;
+        this.hexSize = hexSize;
         const hexOriginImageSize = 30.5; // original image size (hex)
         //var hexSize = 30;//30;   // distance from the center to any corner (radius)
         let height = SceneHeight;
@@ -47,16 +50,32 @@ export default class HexGrid {
             for (let j = 0; j < column; j++)
             {
                 let x = startX, y = startY, s = hexSize, w = hexTileWidth/2; 
-                //this.scene.add.text(startX,  startY, i + ' , ' + j);
+                let b = Phaser.Display.Color.HexStringToColor(ColorCode.BLACK).color;
 
                 let hexTile= new HexTile(scene, startX, startY,i,j);
+                
                 let point = [[0, -s],[w,-s/2], [w,s/2],[0, s],[-w,s/2],[-w,-s/2]];
-                let pog = scene.add.polygon(x+w, y+s, point);
-                let point2 = [[0, -s/2],[w/2,-s/4], [w/2,s/4],[0, s/2],[-w/2,s/4],[-w/2,-s/4]];
-                scene.add.circle(x,y,s/4,0xfbf8fd);
-                let pog2 = scene.add.polygon(x+w/2, y+s/2, point2);
-                pog.setStrokeStyle(hexSize/10, 0xfbf8fd);
-                pog2.setStrokeStyle(hexSize/10, 0xfbf8fd);
+                let pog = scene.add.polygon(x, y, point);
+                pog.setOrigin(0);
+                pog.setStrokeStyle(hexSize/10, b);
+
+                // look A
+                // let point2 = [[0, -s/2],[w/2,-s/4], [w/2,s/4],[0, s/2],[-w/2,s/4],[-w/2,-s/4]];
+                // let pog2 = scene.add.polygon(x, y, point2);
+                // pog2.setOrigin(0);
+                // pog2.setStrokeStyle(hexSize/10, b);
+                // scene.add.circle(x,y,s/4.5,b);
+
+                //look B
+                scene.add.circle(x,y,s/2.5,b);
+                
+                
+
+                //this.scene.add.text(startX,  startY, i + ' , ' + j);
+
+                let point3 = [0,-s, w,-s/2, w,s/2, 0,s, -w,s/2, -w,-s/2];
+                let lpp = new Phaser.Geom.Polygon();
+                lpp.setTo(point3)
 
  
                 startX+=horizontalOffset;
@@ -67,15 +86,27 @@ export default class HexGrid {
 	}
 
     /**
+     * @param {Dots[]} dot_array
+     */
+    connectHandler(dot_array){
+        for(let i = 0; i < dot_array.length; ++i){
+            let d = dot_array[i];
+            this.grid[d.row][d.column].clearDot();
+            d.despawn();
+        }
+    }
+
+    /**
      * @param {any} dot
+     * @param {number} row the starting row the dot is falling into
      * @param {number} col the col the dot is falling into
      */
-    insertDot(dot, col){ // ToColumn
-        if(col >= this.col) return; // error invalid column
+    insertDot(dot, row, col){ // ToColumn
+        if(col >= this.col || row >= this.row) return; // error invalid column
         let g = this.grid;
-        for(let i = 0; i < this.row; ++i){
+        for(let i = row; i < this.row; ++i){
             if(i == this.row-1){
-                if(g[i][col].hasDot()){ return;} // has dot at last column, not possible, error
+                if(g[i][col].hasDot()){ return;} // has dot at last column, do nothing
                 g[i][col].setDot(dot);
             }else if(g[i+1][col].hasDot()){
                 g[i][col].setDot(dot); 
@@ -84,6 +115,59 @@ export default class HexGrid {
                 dot.addWayPoint(g[i][col].pos);
             }
         }
+    }
+
+    updateColumn(col){
+        for(let i  = this.row-2; i >= 0; --i){
+            let hex = this.grid[i][col];
+            let hexNext = this.grid[i+1][col]; 
+            if(hex.hasDot() && !hexNext.hasDot()){
+                let dot = hex.dot
+                hex.clearDot();
+                this.insertDot(dot, dot.row, dot.column);
+            }
+        }
+    }
+
+    /**
+     * @param {Dots[]} dot_array
+     * @param {boolean} isSetup the col the dot is falling into
+     */
+    refillGrid(dot_array, isSetup){
+        
+        const col_occ = dot_array.reduce(function (acc, curr) { // occurrences
+            return acc[curr.column] ? ++acc[curr.column] : acc[curr.column] = 1, acc
+          }, {});
+
+        if(!isSetup){
+            for (const [key, value] of Object.entries(col_occ)) {
+                this.updateColumn(key);
+                for(let v = 0; v < value; ++ v){
+                    let d = dot_array.pop();
+                    if(!d) return;
+                    d.spawn(this.grid[0][key].x, (-v - 1) * this.hexSize * 2 * 3/4);
+                    this.insertDot(d, 0, Number(key));
+                }
+            }      
+        } else {
+            for(let i  = 0; i < dot_array.length; ++i){
+                let d = dot_array[i];
+                let row = Math.floor(i/this.col);
+                let col = i%this.col;
+                d.spawn(this.grid[0][col].x, (-row - 1) * this.hexSize * 2 * 3/4);
+                this.insertDot(d, 0, Number(col));
+            }
+        }
+        // for(let i = 0; i < dot_array.length; ++i){
+        //     let d = dot_array[i];
+        //     d.spawn(this.grid[0][d.column].x, 0);
+        //     this.insertDot(d, 0, d.column);
+        // }  
+
+    }
+
+    isSoftLocked(){
+
     }
 
     getRowHorzOffset(currentRow, xOffset){
