@@ -17,7 +17,7 @@ export default class Dots extends Phaser.GameObjects.Container {
         this.circle = scene.add.circle(0, 0, size);
         scene.physics.world.enable(this);
         this.depth = 1;
-
+        
         this.add(this.circle); 
         this.scene = scene;
         
@@ -27,6 +27,7 @@ export default class Dots extends Phaser.GameObjects.Container {
         this.waypoint = [];
         this.row = 0;
         this.column = 0;
+        this.circSize = size;
 
         // @ts-ignore
         this.body.setCircle(size, -size, -size)
@@ -38,33 +39,14 @@ export default class Dots extends Phaser.GameObjects.Container {
             //console.log("down");
     
         });
-
         this.on('over', function () {
             let pointer = this.scene.input.activePointer;
             if(pointer.isDown){
                 scene.events.emit('addDots', this);
-                //console.log("over");
             }
-
-    
         });
-        //scene.input.enableDebug(this);
-
         this.despawn();
 
-        // //  Our emitter
-        // var particles = scene.add.particles('lemming');
-
-        // var emitter = particles.createEmitter({
-        //     x: 0,
-        //     y: 0,
-        //     lifespan: 2000,
-        //     speed: { min: 200, max: 400 },
-        //     angle: 330,
-        //     gravityY: 300
-        // });
-
-        // this.add(particles);
 	}
 
     /**
@@ -77,9 +59,8 @@ export default class Dots extends Phaser.GameObjects.Container {
         //this.setPosition(this.x , this.y );
         this.row = 0;
         //this.column = 0;
-        this.color = DotColors.getRandomColor();
-        this.circle.setFillStyle(  this.color, 1);
-        
+
+        this.set_Color(DotColors.getRandomColor());
         
         this.setActive(true);
         this.setVisible(true);
@@ -138,7 +119,6 @@ export default class Dots extends Phaser.GameObjects.Container {
             let target = this.waypoint[0];
             let dis = Phaser.Math.Distance.Between(this.x, this.y, this.waypoint[0].x , this.waypoint[0].y);
             
-            //this.body.setVelocity(0, 200)
 
             if(dis < 5){
              
@@ -156,5 +136,30 @@ export default class Dots extends Phaser.GameObjects.Container {
         }
 
     }
+
+    spawn_Connect_Effect(){
+        let circ = this.scene.add.circle(this.x, this.y, this.circSize, this.color);
+
+		this.scene.tweens.add({
+			targets: circ,
+			scale: 2,
+			alpha: 0,
+			duration: 500,
+			onComplete: (tween) => {
+				
+				this.scene.tweens.killTweensOf(circ)
+                circ.destroy();
+			}
+		})
+	}
+
+    set_Color(color){
+
+        this.color = color;
+        this.circle.setFillStyle(  color);
+        //console.log(color + "  " +this.circle.fillColor)
+
+    }
+    
     
 }

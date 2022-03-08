@@ -23,23 +23,14 @@ export default class DotGroup{
 	}
 
     update(){
-        for(let i in this.group){
-            this.group[i].update();
-        }
+        for(let dot of this.group)
+            dot.update();     
     }
 
-    get(){
-        let total = this.group.length;
-        for(let i = 0; i < total; ++i){
-            if(!this.group[i].active)
-                return  this.group[i];
-        }
-        // no active dot found, create one if possible
-        if(total < this.maxSize){
-            let dot = new Dots(this.scene, this.dotSize);
-            this.group.push(dot);
-            return dot;
-        }
+    isIdle(){
+        for(let dot of  this.group)
+            if(dot.waypoint.length > 0) return false
+        return true;
     }
 
     getMatched(color){

@@ -134,21 +134,25 @@ export default class HexGrid {
      * @param {boolean} isSetup the col the dot is falling into
      */
     refillGrid(dot_array, isSetup){
-        
+
         const col_occ = dot_array.reduce(function (acc, curr) { // occurrences
             return acc[curr.column] ? ++acc[curr.column] : acc[curr.column] = 1, acc
           }, {});
 
         if(!isSetup){
+            let temp = [];
             for (const [key, value] of Object.entries(col_occ)) {
                 this.updateColumn(key);
+                
                 for(let v = 0; v < value; ++ v){
-                    let d = dot_array.pop();
+                    let d = dot_array.shift();
                     if(!d) return;
                     d.spawn(this.grid[0][key].x, (-v - 1) * this.hexSize * 2 * 3/4);
                     this.insertDot(d, 0, Number(key));
+                    temp.push(d);
                 }
-            }      
+            }     
+            dot_array = temp; 
         } else {
             for(let i  = 0; i < dot_array.length; ++i){
                 let d = dot_array[i];
@@ -158,16 +162,45 @@ export default class HexGrid {
                 this.insertDot(d, 0, Number(col));
             }
         }
-        // for(let i = 0; i < dot_array.length; ++i){
-        //     let d = dot_array[i];
-        //     d.spawn(this.grid[0][d.column].x, 0);
-        //     this.insertDot(d, 0, d.column);
-        // }  
+
+        if(this.isSoftLocked()){
+            console.log("locked");
+            let randomIndex = Phaser.Math.Between(0, dot_array.length -1);
+
+            let dot = dot_array[randomIndex];
+            let nei = dot.getNeighborIndexs(dot.row);
+            let neighborColor = []
+            for(let n of nei){
+                let i = n[0] + dot.row;
+                let j = n[1] + dot.column;
+                if(i >= 0 && i < this.row && j >= 0 && j < this.col){
+                    neighborColor.push(this.grid[i][j].dot.color);
+                }
+            }
+            randomIndex = Phaser.Math.Between(0, neighborColor.length -1);
+            dot.set_Color(neighborColor[randomIndex]);
+        }
 
     }
-
+    // check if game is softlocked
     isSoftLocked(){
+        for(let r of this.grid){
+            for(let hex of r){
+                let dot = hex.dot;
+                let nei = dot.getNeighborIndexs(dot.row);
+                for(let n of nei){
+                    let i = n[0] + dot.row;
+                    let j = n[1] + dot.column;
+                    if(i >= 0 && i < this.row && j >= 0 && j < this.col){
+                        if(this.grid[i][j].dot.color == dot.color){
+                            return false;
+                        }
+                    }
 
+                }
+            }
+        }
+        return true;
     }
 
     getRowHorzOffset(currentRow, xOffset){

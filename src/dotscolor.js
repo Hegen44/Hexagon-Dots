@@ -15,36 +15,43 @@ export class ColorCode{
     // static LIME = "#07e5a0";
     // static GREEN = "#43bd35";
 
-    static WHITE = "#e3cfb4";
-    static CREME = "#d9ac8b";
-    static IVORY = "#b1a58d";
-    static SKY = "#5d7275";
-    static BLUE = "#5c8b93";
-    static NAVY = "#243d5c";
-    static BLACK = "#2b2821"; 
-    static BLOWN = "#624c3c";
-    static RED =  "#b03a48";
-    static ORANGE = "#d4804d";
-    static YELLOW = "#e0c872";
-    static GREEN = "#3e6958";
+    static RED =  "0xb03a48";
+    static GREEN = "0x3e6958";
+    static BLUE = "0x5c8b93";
+    static YELLOW = "0xe0c872";
+    static ORANGE = "0xd4804d";
+    static BLOWN = "0x624c3c";
+    static CYON = "0x72dcbb";
+    static PINK = "0xffa7a5";
+    static PURPLE = "0xab5675";
+
+    static IVORY = "0xb1a58d";
+    static CREME = "0xd9ac8b";
+    static WHITE = "0xe3cfb4";
+    static BLACK = "0x2b2821";
+
+
+    // static WHITE = "0xffe7d6";
+    // static PINK = "0xffa7a5";
+    // static PURPLE = "0xab5675";
+    // static BLACK = "0x2b2821"; 
+    // static BLUE = "0x34acba";
+    // static BLOWN = "0x73464c";
+    // static RED =  "0xee6a7c";
+    // static ORANGE = "0xd4804d";
+    // static YELLOW = "0xffe07e";
+    // static GREEN = "0x72dcbb";
 }
 
 
 export default class DotColors {
 
     static availableColor = [];  // all color in hex code
-    static pickedColor = [8, 11, 10, 4, 9];
 
     static getRandomColor(){
-        let pickedIndex = Phaser.Math.Between(0, this.DOT_COLORS - 1);
-        return this.getPickedColorByIndex(pickedIndex);
-    }
-
-    static getPickedColorByIndex(num){
-        let index = this.pickedColor[num];
+        let index = Phaser.Math.Between(0, this.DOT_COLORS - 1);
         return this.availableColorByIndex(index);
     }
-
     static availableColorByIndex(code){
         let hex = this.availableColor[code];
         return  Phaser.Display.Color.HexStringToColor(hex).color;
@@ -59,5 +66,10 @@ export default class DotColors {
         //Object.values(ColorCode).forEach(c => this.availableColor.push(c))
         this.DOT_COLORS = 5;
     }
+
+    static upadte_Color_Num(){
+		var file = JSON.parse(localStorage.getItem('myHexDotSaveFile'));
+		this.DOT_COLORS =  file? file.DOT_COLORS : 5;
+	};
 }
 

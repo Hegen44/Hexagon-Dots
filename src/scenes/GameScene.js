@@ -1,11 +1,10 @@
-import Phaser, { Physics, Renderer } from 'phaser'
-import HexTile from '../hextile'
+import Phaser from 'phaser'
 import HexGrid from '../hexgrid'
 import Connect from '../connect'
-import DotColors from '../dotscolor'
-import { ColorCode } from '../dotscolor'
-import Dot from '../dots'
+import DotColors, { ColorCode } from '../dotscolor'
 import DotsGroup from '../dotsgroup'
+import * as myState from '../state';
+import eventsCenter from '../eventscenter'
 
 export default class GameScene extends Phaser.Scene
 {
@@ -15,178 +14,162 @@ export default class GameScene extends Phaser.Scene
 	}
 
 	preload()
-	{
-        this.load.image('hex', 'assets/hexwhite.png');
-        this.load.image('bg', 'assets/bg/sky1.png')
-        //this.load.image('bg', 'assets/bg/space3.png')
+	{   
         this.canvas = this.sys.game.canvas;
-        this.scale = this.sys.game.scale;
+        this.loadFile();
+        DotColors.upadte_Color_Num();
 	}
 
-    getRowHorzOffset(totalRow, currentRow, xOffset){
-        let startX = 0;
-        if(currentRow%2!==0){
-            startX+=xOffset;
-        }else{
-            startX+=2*xOffset;
-        }
-        return startX;
-    }
+    loadFile(){
+		var file = JSON.parse(localStorage.getItem('myHexDotSaveFile'));
+		this.DOT_COLORS  = file? file.DOT_COLORS : 5;
+		this.row = file?file.row : 6;
+		this.column = file?file.col : 6;
+	};
 
     gameOver ()
     {
-        this.input.off('gameobjectover');
-        this.input.off('gameobjectdown');
-        this.input.off('pointerup');
-        this.input.off('gameobjectup');
+        this.stateMachine.transition('gameover');
+    }
+
+    back(){
+        this.scene.start("menu");
     }
 
 	create()
 	{
-        this.text = this.add.text(50, 50, '',{ font: '48px Arial'});
-        this.text.setColor(ColorCode.BLACK);
-        this.text.depth = 3;
-        //this.add.image(width/2, height/2, 'bg'); //this.add.image(400, 300, 'bg');
+        if(this.row == 0 || this.column == 0) return;
+        
+        // set up background =====================================================
         this.cameras.main.setBackgroundColor(ColorCode.WHITE);
+        this.scene.run('ui-scene', {hideInfo: false});
+        
+        // set up timer and score =====================================================
 
-        this.score = 0; //
-        //this.timer = 0; //this.time.addEvent({ delay: 10000, callback: this.gameOver, callbackScope: this }); // gamerover event
+        // this.info = this.add.text(50, 50, '',{ font: '48px Arial'});
+        // this.info.setColor(ColorCode.BLACK);
+        // this.info.depth = 3;
+        this.hexSize = 50;
+        this.score = 0; 
+
         let ms = 1000; // millisecond
         let sec = 60; // second
         this.countDown = sec * ms;
         this.timer = this.time.addEvent({ delay: this.countDown, callback: this.gameOver, callbackScope: this }); // gamerover event
-        //this.timer.paused = true;
+        this.timer.paused = true;
+    
+        // set up hex grid and dots =====================================================
+
+        const row =  this.row;
+        const column = this.column;
+        const height = this.scale.height;
+        const width = this.scale.width;
+        let  hexSize = this.hexSize;   // distance from the center to any corner (radius)
+
+        let hexTileWidth = Math.sqrt(3) * hexSize; 
+        let totalWidth = (column +0.5)* hexTileWidth // (x column + .5f column)  * hexTileWidth
+
+        let hexTileHeight = 2 * hexSize;
+        //let totalHeight = (row - 1) * (hexTileHeight* 3/4) + hexTileHeight;     //(row - 1) * (hexTileHeight* 3/4) + hexTileHeight        
         
-        this.connected = new Connect(this);
+        let testsize1 = (width- width/10)/(column + 1/2)/Math.sqrt(3);
+        let testsize2 = (height - height/6)/(3/2*row - 3/2 + 2);
 
-        this.events.on('addDots', this.connected.addDot, this.connected);
+        let totalHeight = (row - 1) * (hexTileHeight* 3/4) + hexTileHeight;
 
-        this.row =  6;
-        this.column = 6;
-        if(this.row == 0 || this.column == 0) return;
+        console.log("width" + height + " " + totalHeight);
 
-        let row =  this.row;
-        let column = this.column;
-        let height = this.canvas.height;
-        let width = this.canvas.width;
+        hexSize = (testsize1 < testsize2)? testsize1 : testsize2;
+
+
+        
+        //(row - 1) * (hexTileHeight* 3/4) + hexTileHeight
+        //if( totalWidth > width) {
+            console.log(testsize1 + " dsfsdfs" + testsize2);
+        //}
+
         //let center = this.scale.gameSize;
+        this.rec = this.add.rectangle(width/2,height/2,width,height);
+        this.rec.depth = 4;
+        let colorREC = Phaser.Display.Color.HexStringToColor(ColorCode.BLACK).color;
+        this.rec.setFillStyle(colorREC, 0.5);
+        this.rec.setActive(false);
+        this.rec.setVisible(false);
 
-        let hexSize = 50;   // distance from the center to any corner (radius)
-        this.overSize = hexSize;
+        this.connected = new Connect(this);
+        this.events.on('addDots', this.connected.addDot, this.connected);
+        this.events.on('spawnLoop', this.spawn_Loop_Effect, this);
+        this.events.on('deSpawnLoop', this.Despawn_Loop_Effect, this);
 
         this.dotsGroup = new DotsGroup(this, this.row * this.column, hexSize/3);
         this.hexgrid = new HexGrid(this, row, column, hexSize, width, height);
-        this.hexgrid.refillGrid(this.dotsGroup.group, true);
-
+        //this.hexgrid.refillGrid(this.dotsGroup.group, true);
+        
+        // set up line graphic =====================================================
         this.graphic = this.add.graphics();
         this.graphic.depth = 2; // in front of all object
         
-
-        // this.input.on('pointerup', function (pointer)
-        // {
-        //     let con = this.connected;
-        //     if(con.isConnected(true)){
-        //         let dot_array  = [];
-        //         if(con.isLoop()){
-   
-        //             let color = this.connected.getConnectColor();
-        //             dot_array= this.dotsGroup.getMatched(color);
-        //         }else {
-         
-        //             dot_array = con.connectDots;
-        //         }
-                
-        //         this.hexgrid.connectHandler(dot_array);
-        //         this.score += dot_array.length;
-        //         this.hexgrid.refillGrid(dot_array, false);
-        //     }
-        //     con.resetConnected();
-
-        // }, this);
-
-        this.input.on('pointerup', this.pointerUpHandler, this);
-        this.input.on('gameobjectdown', function (pointer, gameObject)
-        {
-            gameObject.emit('down', gameObject);
-
+        // set up input =====================================================
+        this.input.on('pointerup', function (){
+            this.stateMachine.transition('refill');
         }, this);
-        this.input.on('gameobjectover', function (pointer, gameObject)
-        {
-
+        this.input.on('gameobjectdown', function (pointer, gameObject){
+            gameObject.emit('down', gameObject);
+        }, this);
+        this.input.on('gameobjectover', function (pointer, gameObject){
             gameObject.emit('over', gameObject);
         }, this);
-        this.input.on('gameobjectup', function (pointer, gameObject)
-        {
+        this.input.on('gameobjectup', function (pointer, gameObject){
             gameObject.emit('clicked', gameObject);
         }, this);
 
-        // var balls = this.physics.add.group({
-        //     key: 'ball',
-        //     quantity: 24,
-        //     bounceX: 1,
-        //     bounceY: 1,
-        //     collideWorldBounds: true,
-        //     velocityX: 300,
-        //     velocityY: 150
-        // });
-        // Phaser.Actions.RandomRectangle(balls.getChildren(), this.physics.world.bounds);
-        // this.physics.add.collider(
-        //     balls,
-        //     crates,
-        //     function (ball, crate)
-        //     {
-        //         ball.setAlpha(0.5);
-        //         crate.setAlpha(0.5);
-        //     });
-        // }
+        // set up StateMachine =====================================================
 
-        // this.tweens.add({
-        //     targets: container,
-        //     angle: 360,
-        //     duration: 6000,
-        //     yoyo: true,
-        //     repeat: -1
-        // });
+          this.stateMachine = new myState.StateMachine('setup', {
+            setup: new myState.SetUpState(),
+            play: new myState.PlayState(),
+            refill: new myState.RefillState(),
+            gameover: new myState.GameOverState(),
+            pause: new myState.PauseState()
+          }, [this, this.dotsGroup, this.hexgrid, this.connected]);
+
+
+        eventsCenter.on('return', this.back, this);
+
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>{
+            eventsCenter.off('return', this.back, this);
+            this.scene.stop('ui-scene');
+        })
     
 	}
 
-    pointerUpHandler(){
-        let con = this.connected;
-        if(con.isConnected(true)){
-            let dot_array  = [];
-            if(con.isLoop()){
+    spawn_Loop_Effect(){
+        let color = this.connected.getConnectColor();
+        let dot_array= this.dotsGroup.getMatched(color);
 
-                let color = this.connected.getConnectColor();
-                dot_array= this.dotsGroup.getMatched(color);
-            }else {
-     
-                dot_array = con.connectDots;
-            }
-            
-            this.hexgrid.connectHandler(dot_array);
-            this.score += dot_array.length;
-            this.hexgrid.refillGrid(dot_array, false);
+        this.rec.setActive(true);
+        this.rec.setVisible(true);
+        this.rec.setFillStyle(color, 0.25);
+        this.rec.setStrokeStyle(this.hexSize/2, color, 1);
+        for(let dot of dot_array){
+            dot.spawn_Connect_Effect();
         }
-        con.resetConnected();
+    }
+
+    Despawn_Loop_Effect(){
+        this.rec.setActive(false);
+        this.rec.setVisible(false);
     }
 
     update(){
 
-        this.graphic.clear();
-        this.graphic.setVisible(true);
+        if(this.stateMachine.state == 'gameover') return; // game over no longer update
 
-        let pointer = this.input.activePointer;
-        this.connected.updatePath(pointer);
-        if(this.connected.isConnected(false)){
-            
-            this.graphic.lineStyle(this.overSize/4, this.connected.getConnectColor());
-            this.graphic.strokePoints(this.connected.points);
-        }
-        
-        let time = Math.floor(this.countDown - this.timer.getElapsedSeconds());
-        time = Math.floor(this.timer.getRemainingSeconds());
-        this.text.setText("Time: " + time + "\nScore: " + this.score);
-        this.dotsGroup.update();
+        let time = Math.floor(this.timer.getRemainingSeconds());
+        eventsCenter.emit('update-time', time);
+        eventsCenter.emit('update-score', this.score);
+
+        this.stateMachine.step();
         
     }
 
