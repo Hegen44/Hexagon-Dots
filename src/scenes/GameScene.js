@@ -20,18 +20,26 @@ export default class GameScene extends Phaser.Scene
         DotColors.upadte_Color_Num();
 	}
 
+    /**
+     * load setting from local storage
+     */
     loadFile(){
 		var file = JSON.parse(localStorage.getItem('myHexDotSaveFile'));
-		this.DOT_COLORS  = file? file.DOT_COLORS : 5;
 		this.row = file?file.row : 6;
 		this.column = file?file.col : 6;
 	};
 
+    /**
+     * Game over event, transition to game over state
+     */
     gameOver ()
     {
         this.stateMachine.transition('gameover');
     }
 
+       /**
+     * Back button event, emit from the ui scene, start the menu scene
+     */
     back(){
         this.scene.start("menu");
     }
@@ -45,10 +53,6 @@ export default class GameScene extends Phaser.Scene
         this.scene.run('ui-scene', {hideInfo: false});
         
         // set up timer and score =====================================================
-
-        // this.info = this.add.text(50, 50, '',{ font: '48px Arial'});
-        // this.info.setColor(ColorCode.BLACK);
-        // this.info.depth = 3;
         this.hexSize = 50;
         this.score = 0; 
 
@@ -64,31 +68,15 @@ export default class GameScene extends Phaser.Scene
         const column = this.column;
         const height = this.scale.height;
         const width = this.scale.width;
-        let  hexSize = this.hexSize;   // distance from the center to any corner (radius)
-
-        let hexTileWidth = Math.sqrt(3) * hexSize; 
-        let totalWidth = (column +0.5)* hexTileWidth // (x column + .5f column)  * hexTileWidth
-
-        let hexTileHeight = 2 * hexSize;
-        //let totalHeight = (row - 1) * (hexTileHeight* 3/4) + hexTileHeight;     //(row - 1) * (hexTileHeight* 3/4) + hexTileHeight        
+        let  hexSize = this.hexSize;   // distance from the center to any corner (radius)     
         
+        // calculate the right hex size in relation to the width and height of the screen and the row and column of the grid
         let testsize1 = (width- width/10)/(column + 1/2)/Math.sqrt(3);
         let testsize2 = (height - height/6)/(3/2*row - 3/2 + 2);
 
-        let totalHeight = (row - 1) * (hexTileHeight* 3/4) + hexTileHeight;
-
-        console.log("width" + height + " " + totalHeight);
-
         hexSize = (testsize1 < testsize2)? testsize1 : testsize2;
 
-
-        
-        //(row - 1) * (hexTileHeight* 3/4) + hexTileHeight
-        //if( totalWidth > width) {
-            console.log(testsize1 + " dsfsdfs" + testsize2);
-        //}
-
-        //let center = this.scale.gameSize;
+        // set up Connect and loop effect =====================================================
         this.rec = this.add.rectangle(width/2,height/2,width,height);
         this.rec.depth = 4;
         let colorREC = Phaser.Display.Color.HexStringToColor(ColorCode.BLACK).color;
@@ -102,8 +90,7 @@ export default class GameScene extends Phaser.Scene
         this.events.on('deSpawnLoop', this.Despawn_Loop_Effect, this);
 
         this.dotsGroup = new DotsGroup(this, this.row * this.column, hexSize/3);
-        this.hexgrid = new HexGrid(this, row, column, hexSize, width, height);
-        //this.hexgrid.refillGrid(this.dotsGroup.group, true);
+        this.hexgrid = new HexGrid(this, row, column, hexSize);
         
         // set up line graphic =====================================================
         this.graphic = this.add.graphics();
@@ -129,8 +116,7 @@ export default class GameScene extends Phaser.Scene
             setup: new myState.SetUpState(),
             play: new myState.PlayState(),
             refill: new myState.RefillState(),
-            gameover: new myState.GameOverState(),
-            pause: new myState.PauseState()
+            gameover: new myState.GameOverState()
           }, [this, this.dotsGroup, this.hexgrid, this.connected]);
 
 
@@ -143,6 +129,9 @@ export default class GameScene extends Phaser.Scene
     
 	}
 
+    /**
+     * Spawn Loop Effect when loop is detected
+     */
     spawn_Loop_Effect(){
         let color = this.connected.getConnectColor();
         let dot_array= this.dotsGroup.getMatched(color);
@@ -155,12 +144,17 @@ export default class GameScene extends Phaser.Scene
             dot.spawn_Connect_Effect();
         }
     }
-
+    /**
+     * Despawn Loop Effect when there is no longer any loop
+     */
     Despawn_Loop_Effect(){
         this.rec.setActive(false);
         this.rec.setVisible(false);
     }
 
+    /**
+     * upate statemchine and update score/timer in the ui scene
+     */
     update(){
 
         if(this.stateMachine.state == 'gameover') return; // game over no longer update

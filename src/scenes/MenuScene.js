@@ -15,6 +15,7 @@ export default class MenuScene extends Phaser.Scene
 
 	create()
 	{
+		// Setup Main Menu ===================================================
 		this.cameras.main.setBackgroundColor(ColorCode.WHITE);
         const width = this.scale.width;
         const height = this.scale.height;
@@ -25,7 +26,10 @@ export default class MenuScene extends Phaser.Scene
 		let black = color.HexStringToColor(ColorCode.BLACK).color;
 		let red = color.HexStringToColor(ColorCode.RED).color;
 
+		// Setup Tittle ===================================================
         let title = this.add.text(width * 0.5, height * 0.25, 'HEXAGON-DOTS', {font: textSize * 2 + 'px Arial', color: ColorCode.BLACK}).setOrigin(0.5);
+
+		// Setup Button ===================================================
 
 		let play = this.add.image(0,0,'play');
 		let ds = play.displayWidth * play.displayHeight;
@@ -38,7 +42,7 @@ export default class MenuScene extends Phaser.Scene
 		let settext = this.add.text(0, setting.displayHeight/2 + textSize, 'Setting', {font: textSize + 'px Arial', color: ColorCode.BLACK}).setOrigin(0.5);
 
 
-
+		// setup event for button 
 		let playButton = this.add.container(width*1/4, height/2, [play,playtext]);
 		playButton.setInteractive(new Phaser.Geom.Circle(0,0,play.displayWidth/2), Phaser.Geom.Circle.Contains);
 		playButton.disableInteractive();
@@ -56,6 +60,7 @@ export default class MenuScene extends Phaser.Scene
 		SetButton.on('pointerover',function(){setting.setTint(black);}, this); // ColorCode.BLACK
 		SetButton.on('pointerout',function(){(setting.setTintFill(red))}, this);
 
+		// tweens for button and title ===================================================
 		this.tweens.add({
 
 			targets: playButton,

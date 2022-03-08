@@ -29,10 +29,11 @@ export default class GameOver extends Phaser.Scene
         const height = this.scale.height;
 		const textSize = width * height / (15000);
 
-
+		// set up text and button ======================================================
 		this.setUp_Text(ColorCode.BLACK, width,height, textSize);
 		this.setUp_Button(ColorCode.BLUE,ColorCode.BLACK, width, height, textSize);
 
+		// setup input for clicking button ======================================================
 		this.input.on('gameobjectup', function (pointer, gameObject){
             gameObject.emit('clicked', gameObject);
         }, this);

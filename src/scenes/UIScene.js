@@ -24,19 +24,20 @@ export default class UIScene extends Phaser.Scene
 		const textSize = width * height / (13000);
 
 		let color = Phaser.Display.Color;
-		//let orange = color.HexStringToColor(ColorCode.ORANGE).color;
+		
+		
+		// set up the back button
 		let black = color.HexStringToColor(ColorCode.BLACK).color;
-
 		let back = this.add.image(0,0,'back');
 		let ds = back.displayWidth * back.displayHeight;
 		back.setScale(width * height / ds / 1.5);
         back.setPosition(back.displayWidth/2, height - back.displayHeight/2);
 		back.setTintFill(black);  
 
+		// if the back button is clicked on, then it will emit event to retrun to them menu from current scene
 		back.on('pointerup', function(){eventsCenter.emit('return');});
-		// back.on('pointerover',function(){back.setTint(black)}, this); 
-		// back.on('pointerout',function(){back.setTintFill(black);}, this);
 
+		// Tweens to move the button into view and activita the button when tweens completed
 		this.tweens.add({
 
 			targets: back,
@@ -49,6 +50,7 @@ export default class UIScene extends Phaser.Scene
 	
 		});
 
+		// Only display time and score when it is in the game Scene
 		if(!this.hideInfo){
 
 			this.timerLabel = this.add.text(-width/4, 0, 'Time: 0', {
@@ -69,7 +71,9 @@ export default class UIScene extends Phaser.Scene
 				ease: 'Back'
 		
 			});
-
+			
+			
+			// events to update the score and time, only called from the game scene
 			eventsCenter.on('update-time', this.upateTime, this);
 			eventsCenter.on('update-score', this.updateScore, this);
 	
@@ -82,11 +86,12 @@ export default class UIScene extends Phaser.Scene
 
 
 	}
+	// events to update the score and time, only called from the game scene
 	updateScore(score)
 	{
 		this.scoreLabel.text = `Score: ${score}`
 	}
-
+	// events to update the score and time, only called from the game scene
 	upateTime(time){
 		this.timerLabel.text = `Time: ${time}`
 	}

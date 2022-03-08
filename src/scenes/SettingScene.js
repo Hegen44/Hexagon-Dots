@@ -83,8 +83,13 @@ export default class SettingScene extends Phaser.Scene
             this.scene.stop('ui-scene');
         })
 	}
-
-	saveFile = function(dot_color, row, col){
+	/**
+	 * Save setting into the local storage
+	 * @param {string | number} dot_color
+	 * @param {string | number} row
+	 * @param {string | number} col
+	 */
+	saveFile(dot_color, row, col){
 		console.log(dot_color + " " + row + " " + col)
 		var file = {
 			DOT_COLORS: dot_color,
@@ -93,7 +98,9 @@ export default class SettingScene extends Phaser.Scene
 		};
 		localStorage.setItem('myHexDotSaveFile',JSON.stringify(file));
 	};
-
+    /**
+	 * Load setting from the local storage, if none is found, use the default setting
+	 */
 	loadFile(){
 		var file = JSON.parse(localStorage.getItem('myHexDotSaveFile'));
 		this.DOT_COLORS  = file? file.DOT_COLORS : 5;
@@ -101,6 +108,14 @@ export default class SettingScene extends Phaser.Scene
 		this.col = file?file.col : 6;
 	};
 
+	/**
+	 * Set up the title of the setting screen
+	 * @param {number} x				x position
+	 * @param {number} y				y positon
+	 * @param {string} color 			color of the title
+	 * @param {number} size  			size of the titile
+	 * @param {string | string[]} text 	text of the title
+	 */
 	setUp_Tittle(x,y , color, size, text){
         let tittle = this.add.text(x, y, text, {font: size * 3 + 'px Arial', color: color}).setOrigin(0.5);
 

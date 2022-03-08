@@ -3,12 +3,15 @@ import { Geom } from 'phaser';
 //import { Math } from 'phaser';
 import DotColors from './dotscolor'
 
+   /**
+     * A class of dots in the game
+     */
 export default class Dots extends Phaser.GameObjects.Container { 
 
-    //constructor(scene, x, y, size, index, column)
+
     /**
-     * @param {Phaser.Scene} scene
-     * @param {number} size
+     * @param {Phaser.Scene} scene  game scene
+     * @param {number} size         size of the each dot
      */
     constructor(scene, size)
 	{
@@ -36,7 +39,6 @@ export default class Dots extends Phaser.GameObjects.Container {
         this.setInteractive(new Phaser.Geom.Circle(0,0,size), Phaser.Geom.Circle.Contains);
         this.on('down', function () {
             scene.events.emit('addDots', this);
-            //console.log("down");
     
         });
         this.on('over', function () {
@@ -50,44 +52,57 @@ export default class Dots extends Phaser.GameObjects.Container {
 	}
 
     /**
-     * @param {number} x
-     * @param {number} y
+     * Spawn the dot
+     * @param {number} x  positon for the dot to spawn
+     * @param {number} y  positon for the dot to spawn
      */
     spawn(x , y){
         this.x = x;
         this.y = y;
-        //this.setPosition(this.x , this.y );
-        this.row = 0;
-        //this.column = 0;
 
+        this.row = 0;
+
+        // reroll the color
         this.set_Color(DotColors.getRandomColor());
         
         this.setActive(true);
         this.setVisible(true);
 
+        //enable physic
         this.scene.physics.world.enable(this);
 
     }
 
+    /**
+     * Despawn the dot
+     */
     despawn(){
         this.setActive(false);
         this.setVisible(false);
         this.disableInteractive();
-        //this.scene.physics.world.disable(this);
     }
 
     /**
-    * @param {Geom.Point} wp
+     * add way pont for the dots to move to
+    * @param {Geom.Point} wp  the new way point
     */
     addWayPoint(wp){
         this.waypoint.push(wp);
     }
 
-
+    /**
+     * set the positon of the hex the dot is in
+     * @param {number} i  row index of the hex
+     * @param {number} j  column index of the hex
+     */
     setGridIndex(i,j){
         this.row = i, this.column = j;
     }
-
+    /**
+     * check if the 2 dots are neighbor
+     * @param {Dots} other  the check to check against
+     * @return {boolean}
+     */
     isNeighbor(other){
         let neighbor = this.getNeighborIndexs(this.row);
         let rdiff = other.row - this.row;
@@ -99,6 +114,12 @@ export default class Dots extends Phaser.GameObjects.Container {
         return false;
     }
 
+       /**
+     * get every neighbourIndexs of the dots
+     * Indexs are different depends on if the row is even or odd
+     * @param {Number} row  the current row of the dot
+     * @return {Number[][]}
+     */
     getNeighborIndexs(row){
         // even rows 
         let even = [[+1,  0], [-1, +1], [ 0, -1], 
@@ -110,7 +131,9 @@ export default class Dots extends Phaser.GameObjects.Container {
         return (row%2 == 0)? even : odd;
     }
 
-
+    /**
+     * upate function, move the dots if there is avaible waypoints
+     */
     update(){
         
         if(this.waypoint.length > 0){
@@ -137,6 +160,11 @@ export default class Dots extends Phaser.GameObjects.Container {
 
     }
 
+    
+     /**
+     * spawn effect when it is being touched Set color to the input color
+     * 
+     */
     spawn_Connect_Effect(){
         let circ = this.scene.add.circle(this.x, this.y, this.circSize, this.color);
 
@@ -153,11 +181,14 @@ export default class Dots extends Phaser.GameObjects.Container {
 		})
 	}
 
+    /**
+     * Set color to the input color
+     * @param {any} color
+     */
     set_Color(color){
 
         this.color = color;
         this.circle.setFillStyle(  color);
-        //console.log(color + "  " +this.circle.fillColor)
 
     }
     
